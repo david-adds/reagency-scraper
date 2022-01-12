@@ -1,19 +1,20 @@
 import scrapy
 import json
 
-from scrapy.selector.unified import _response_from_text
-
-
 class ListingsSpider(scrapy.Spider):
     name = 'listings'
     allowed_domains = ['www.centris.ca']
+    
+    position = {
+        'startPosition': 0
+    }
     
     def start_requests(self):
         yield scrapy.Request(
             url = 'https://www.centris.ca/UserContext/Lock',
             method = 'POST',
             headers = {
-                'content-Type': 'application/json',
+                'Content-Type': 'application/json',
                 'x-requested-with': 'XMLHttpRequest',
             },
             body = json.dumps({'uc':0}),
@@ -78,7 +79,7 @@ class ListingsSpider(scrapy.Spider):
             method = 'POST',
             body = json.dumps(query),
             headers = {
-                'content-Type': 'application/json',
+                'Content-Type': 'application/json',
                 'x-requested-with': 'XMLHttpRequest',
                 'x-centris-uc': 0,
                 'x-centris-uck': uck
@@ -86,7 +87,15 @@ class ListingsSpider(scrapy.Spider):
             callback = self.update_query
         )
         
-        
     def update_query(self, response):
+        yield scrapy.Request(
+            url ='https://www.centris.ca/Property/GetInscriptions',
+            method = 'POST',
+            body = json.dumps(self.position),
+            headers = {
+                'Content-Type': 'application/json'
+            },
+            callback = self.parse
+        )
+    def parse(self,response):
         print(response.body)
-        
