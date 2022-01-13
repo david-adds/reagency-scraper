@@ -1,5 +1,7 @@
+from urllib.parse import urljoin
 import scrapy
 import json
+from scrapy.selector import Selector
 
 class ListingsSpider(scrapy.Spider):
     name = 'listings'
@@ -98,4 +100,21 @@ class ListingsSpider(scrapy.Spider):
             callback = self.parse
         )
     def parse(self,response):
-        print(response.body)
+        resp_dict = json.loads(response.body)
+        html = resp_dict.get('d').get('Result').get('html')
+        sel = Selector(text=html)
+        listings = sel.xpath("//div[@class='shell']")
+        for listing in listings:
+            category = listing.xpath("normalize-space(.//span[@class='category']/div/text())").get()
+            bedrooms = listing.xpath(".//div[@class='cac']/text()" ).get()
+            bathrooms = listing.xpath(".//div[@class='sdb']/text()" ).get()
+            price = listing.xpath(".//div[@class='price']/span[1]/text()").get()
+            city = listing.xpath(".//span[@class='address']/div[2]/text()").get()
+            url = listing.xpath(".//a[contains(@class,'property-thumbnail-summary-link')]/@href").get()
+            yield{
+                'category': category,
+                'features': f'bedrooms qty: {bedrooms}, bathrooms qty:{bathrooms}',
+                'price': price,
+                'city': city,
+                'url': url
+            }
