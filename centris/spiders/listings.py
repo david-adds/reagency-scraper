@@ -11,11 +11,18 @@ class ListingsSpider(scrapy.Spider):
         'startPosition': 0
     }
     script = '''
-    function main(splash, args)
-        assert(splash:go(args.url))
-        assert(splash:wait(0.5))
-        return splash:html()
-    end
+        function main(splash, args)
+            splash:on_request(function(request)
+                if request.url:find('css') then
+                    request.abort()
+                end
+            end)
+            splash.images_enabled = false
+            splash.js_enabled = false
+            assert(splash:go(args.url))
+            assert(splash:wait(0.5))
+            return splash:html()
+        end
     '''
     
     def start_requests(self):
@@ -152,8 +159,8 @@ class ListingsSpider(scrapy.Spider):
                 )
         
     def parse_summary(self,response):
-        address = response.xpath("//h2[@itemprop='address']/text()").get()
-        description = response.xpath("//div[@itemprop='description']/text()").get()
+        address = response.xpath("normalize-space(//h2[@itemprop='address']/text())").get()
+        description = response.xpath("normalize-space(//div[@itemprop='description']/text())").get()
         category = response.request.meta['cat']
         features = response.request.meta['feat']
         price = response.request.meta['price']
