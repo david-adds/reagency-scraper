@@ -1,8 +1,7 @@
-import re
-from urllib.parse import urljoin
 import scrapy
-import json
 from scrapy.selector import Selector
+from scrapy_splash import SplashRequest
+import json
 
 class ListingsSpider(scrapy.Spider):
     name = 'listings'
@@ -11,7 +10,7 @@ class ListingsSpider(scrapy.Spider):
     position = {
         'startPosition': 0
     }
-    '''
+    script = '''
     function main(splash, args)
         assert(splash:go(args.url))
         assert(splash:wait(0.5))
@@ -119,13 +118,24 @@ class ListingsSpider(scrapy.Spider):
             price = listing.xpath(".//div[@class='price']/span[1]/text()").get()
             city = listing.xpath(".//span[@class='address']/div[2]/text()").get()
             url = listing.xpath(".//a[contains(@class,'property-thumbnail-summary-link')]/@href").get()
-            yield{
-                'category': category,
-                'features': f'bedrooms qty: {bedrooms}, bathrooms qty:{bathrooms}',
-                'price': price,
-                'city': city,
-                'url': url
-            }
+            abs_url = f"https://www.centris.ca{url}"
+            
+            yield SplashRequest(
+                url = abs_url,
+                endpoint = 'execute',
+                callback = self.parse_summary,
+                args = {
+                    'lua_source': self.script
+                },
+                meta = {
+                    'cat': category,
+                    'feat': f"bedrooms qty:{bedrooms}, bathrooms qty:{bathrooms}",
+                    'price': price,
+                    'city': city,
+                    'url': abs_url
+                }   
+            )
+                
             count = resp_dict.get('d').get('Result').get('count')
             increment_number = resp_dict.get('d').get('Result').get('inscNumberPerPage')
             
@@ -140,3 +150,22 @@ class ListingsSpider(scrapy.Spider):
                     },
                     callback = self.parse
                 )
+        
+    def parse_summary(self,response):
+        address = response.xpath("//h2[@itemprop='address']/text()").get()
+        description = response.xpath("//div[@itemprop='description']/text()").get()
+        category = response.request.meta['cat']
+        features = response.request.meta['feat']
+        price = response.request.meta['price']
+        city = response.request.meta['city']
+        url = response.request.meta['url']
+        
+        yield{
+            'address': address,
+            'description': description,
+            'category': category,
+            'features': features,
+            'price': price,
+            'city': city,
+            'url': url 
+        }
