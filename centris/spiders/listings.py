@@ -11,6 +11,13 @@ class ListingsSpider(scrapy.Spider):
     position = {
         'startPosition': 0
     }
+    '''
+    function main(splash, args)
+        assert(splash:go(args.url))
+        assert(splash:wait(0.5))
+        return splash:html()
+    end
+    '''
     
     def start_requests(self):
         yield scrapy.Request(
