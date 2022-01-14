@@ -1,3 +1,4 @@
+import re
 from urllib.parse import urljoin
 import scrapy
 import json
@@ -118,3 +119,17 @@ class ListingsSpider(scrapy.Spider):
                 'city': city,
                 'url': url
             }
+            count = resp_dict.get('d').get('Result').get('count')
+            increment_number = resp_dict.get('d').get('Result').get('inscNumberPerPage')
+            
+            if self.position['startPosition'] <= count:
+                self.position['startPosition']+=increment_number
+                yield scrapy.Request(
+                    url ='https://www.centris.ca/Property/GetInscriptions',
+                    method = 'POST',
+                    body = json.dumps(self.position),
+                    headers = {
+                        'Content-Type': 'application/json'
+                    },
+                    callback = self.parse
+                )
