@@ -59,6 +59,8 @@ DOWNLOADER_MIDDLEWARES = {
 
 DUPEFILTER_CLASS = 'scrapy_splash.SplashAwareDupeFilter'
 
+SPLASH_URL = 'http://localhost:8050/'
+
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
 #EXTENSIONS = {
